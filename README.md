@@ -1,9 +1,11 @@
 # hs-predictor
 A simple project for predicting an opponent's deck in Hearthstone.  
-Python Version 3.6.5
+Python Version 3.6.6
 
 The script allows the user to enter the opponent's class and then, as the game is being played, enter what cards are used by the opponent.
 After each card is entered, the script returns the list of possible cards in the opponent's deck with the corresponding probability that the card is included.
+
+The convert-data.py script should be run first, to convert all raw scraped class data into a standardized format used by hs-predictor.py.
 
 Deck and card information is current as of 02 October 2018.
 

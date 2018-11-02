@@ -1,4 +1,4 @@
-#!c:\users\nick\onedrive\desktop\hs-predictor\env\scripts\python.exe
+#!C:\Users\nick\PythonProjects\hs-predictor\venv\Scripts\python.exe
 # See http://cens.ioc.ee/projects/f2py2e/
 from __future__ import division, print_function
 

@@ -3,100 +3,95 @@
 import pandas as pd
 import numpy as np
 
+
 # Helper function for get_card_probabilities, creates dict for counting decks with/without a given card
 def build_card_dict(card_dataframe):
     d = {}
-    for card_name in card_dataframe["Name"]:
+    for card_name in card_dataframe['Name']:
         d[card_name] = 0
     return d
 
-# Builds a dataframe from the raw deck csv
-def build_deck_dataframe(index, deck_csv, all_cards):
-    new_deck = pd.DataFrame(data=np.zeros((1, all_cards.shape[0]), dtype=int), columns=all_cards["Name"])
-    for idx2, card in deck_csv.iteritems():
-        if type(card) == str:
-            # Clean card names based on scraping results
-            card = card.replace(",", "")
-            # Account for the column that shows Games Played, which is not a card
-            if card.isdigit():
-                new_deck["Games Played"] = int(card)
-            else:
-                for char in "★×2":
-                    card = card.replace(char, "")
-                if card[len(card) - 1] == " ":
-                    card = card[:len(card) - 1]
-                new_deck[card] = 1
-    new_deck["Deck Name"] = index
-    return new_deck
 
-# General function for converting dict to list of tuples, for easy sorting
-def convert_dict_to_list(my_dict):
-    dict_list = []
-    for key, value in my_dict.items():
-        if value != 0:
-            dict_list.append((value, key))
-    dict_list.sort(reverse=True)
-    return dict_list
+# Prompt user for card played, subsets possible decks containing that card
+def enter_card(remaining_decks):
+    while True:
+        try:
+            card_played = input("Card played: ")
+            return card_played, remaining_decks.loc[remaining_decks[card_played] == 1]
+        except KeyError:
+            print("Card not found in any decks.")
+
 
 # Puts cards into dict where dict[name] is the probability a given card appears in a deck
-def get_card_probabilities(all_possible_decks, all_cards):
-    if len(all_possible_decks) == 0:
-        return []
+def get_card_probabilities(decks, all_cards):
+    # Create dict of all HS cards, where key is card name and value is probability for that card
     card_dict = build_card_dict(all_cards)
-    for card_name in all_possible_decks.columns.values:
-        included = 0
-        for val in all_possible_decks[card_name]:
-            if val == 1:
-                included += 1
-        card_dict[card_name] = included / len(all_possible_decks[card_name])
-    return convert_dict_to_list(card_dict)
+
+    if len(decks) == 0:
+        return card_dict
+
+    # for each possible card, calculate probability as sum of games played by 
+    # decks with that card divided by total games played by all decks
+    total_games = decks['Games Played'].sum()
+    for idx, row in decks.iterrows():
+        for card_name in all_cards['Name']:
+            if row[card_name] == 1:
+                card_dict[card_name] += row['Games Played'] / total_games
+
+    return card_dict
+
 
 # Reads csv file for a specific Hearthstone class
 def get_class_data_from_csv():
     while True:
         try:
             opponent_class = input("Enter opponent's class: ").lower()
-            return pd.read_csv(opponent_class + "data.csv", index_col="Deck Name")
+            return pd.read_csv('./converted-class-data/' + opponent_class + "-converted.csv")
         except FileNotFoundError:
-            print("Class not found. Try again.")
+            print("Class file not found. Try again.")
 
-# Prompt user for card played, subsets possible decks containing that card
-def get_possible_decks(remaining_decks):
-    while True:
-        try:
-            card_played = input("Card played: ")
-            return remaining_decks.loc[remaining_decks[card_played] == 1]
-        except KeyError:
-            print("Card not found in any decks.")
+
+# Function to display cards and their probabilities, and cards already seen, to the user
+def print_game_state(sorted_cards, cards_seen):
+    print()
+
+    # Display cards and probability that they are included in the deck
+    print("Cards likely in opponent's deck:")
+    for card_name, prob in sorted_cards:
+        if (prob > 0.05) and (card_name not in cards_seen):
+            print("   " + card_name.ljust(25) + "| " + str(round(prob*100, 1)) + " %")
+
+    print('Cards already played:')
+    for card in cards_seen:
+        print('   ' + card)
+
+    print()
+
 
 def main():
-	# Import all card data
+    # Import all card data
     all_card_data = pd.read_csv('allcarddata.csv')
 
     # Read top deck data for opponent's class
-    class_data = get_class_data_from_csv()
+    possible_decks = get_class_data_from_csv()
 
-    # Build dataframe for class used by opponent
-    # Data frame 'decks' contains all cards in Hearthstone as columns, where each row is a different deck.
-    # Cell value is 1 if deck (represented by row) contains card (represented by column), 0 otherwise
-    decks = pd.DataFrame(columns=all_card_data["Name"])
-    for idx, deck_row in class_data.iterrows():
-        decks = decks.append(build_deck_dataframe(idx, deck_row, all_card_data), sort=False)
-    decks.index = range(len(decks.index))
-
-    # Enter cards until user says game is over
-    possible_decks = decks
+    # Begin playing the game
+    cards_seen = []
     while True:
-        possible_decks = get_possible_decks(possible_decks)
-        print()
-        for prob, card_name in get_card_probabilities(possible_decks, all_card_data):
-        	if prob > 0.2:
-        		print("   " + card_name.ljust(25) + "| " + str(round(prob*100, 1)) + " %")
-        print()
+        # Get user input about card played by opponent, subset decks accordingly
+        card_played, possible_decks = enter_card(possible_decks)
+        cards_seen.append(card_played)
 
-        done_playing = input("Done? [y/n] \n")
-        if done_playing == 'y':
+        # Get sorted list of cards from most to least likely
+        sorted_cards = sorted(get_card_probabilities(possible_decks, all_card_data).items(), 
+            key=lambda x: x[1], reverse=True)
+
+        print_game_state(sorted_cards, cards_seen)
+
+        # Ask to continue or quit
+        done_playing = input("Press enter to continue, or type 'done' to stop. \n")
+        if done_playing.lower() == 'done':
             break
 
 if __name__ == "__main__":
-	main()
+    main()
