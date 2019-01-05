@@ -7,6 +7,13 @@ from selenium import webdriver
 from bs4 import BeautifulSoup
 
 
+'''
+TODO: standardize card names to avoid name issues... users currently have to
+enter card names exactly as they appear on the card. Also, HSReplay made a
+mistake in their HTML and labelled "Mosh'ogg Enforcer" as "Mosh'Ogg Enforcer"
+'''
+
+
 def scrape_pages(class_name):
     '''
     Uses FireFox webdriver to scrape webpages for the class given.
@@ -15,13 +22,14 @@ def scrape_pages(class_name):
 
     # Set up the FireFox webdriver
     os.environ['MOZ_HEADLESS'] = '1'
-    binary = FirefoxBinary('C:\\Program Files\\Mozilla Firefox\\firefox.exe', log_file=sys.stdout)
+    binary = FirefoxBinary('C:\\Program Files\\Mozilla Firefox\\firefox.exe', 
+        log_file=sys.stdout)
     driver = webdriver.Firefox(firefox_binary=binary)
 
     # Get the html soups with BeautifulSoup
     soup_list = []
     for i in range(30):
-        driver.get('https://hsreplay.net/decks/#playerClasses={}&page={}'.format(class_name, i))
+        driver.get(f'https://hsreplay.net/decks/#playerClasses={class_name}&page={i}')
         soup_list.append(BeautifulSoup(driver.page_source, 'html.parser'))
     driver.quit()
 
@@ -31,7 +39,8 @@ def scrape_pages(class_name):
 def create_deck_row(tile_soup, all_card_data):
     '''
     Creates a pandas dataframe whose columns are all cards in Hearthstone, 
-    where the row val is 1 if the card is including in the deck and 0 otherwise.
+    where the row val is how many of that card is included in the deck (either
+    0, 1, or 2)
     '''
 
     # Separate deck name, games played, and the cards
@@ -48,14 +57,26 @@ def create_deck_row(tile_soup, all_card_data):
     new_deck = pd.DataFrame(data=np.zeros((1, all_card_data.shape[0])))
     new_deck.columns = all_card_data['Name']
 
-    # Clean card names and change dataframe value to 1 to show it's included
+    # Clean card names and change dataframe value to show it's included
     for card_str in cards:
+
+        # check for double card (two of same card in deck)
+        double_card = False
+        if card_str[-1] == '2':
+            double_card = True
+
+        # clean card name
         for char in '★×2':
             card_str = card_str.replace(char, '')
         if card_str[-1] == ' ':
             card_str = card_str[:-1]
+        # card_str = card_str.lower()
 
-        new_deck[card_str] = 1
+        # save col value as number of that card in deck
+        if double_card:
+            new_deck[card_str] = 2
+        else:
+            new_deck[card_str] = 1
 
     new_deck['Deck Name'] = deck_name
     new_deck['Games Played'] = int(game_count.replace(',', ''))
@@ -86,8 +107,7 @@ def scrape_class(class_name, all_card_data):
     # Write to the csv file
     if not os.path.isdir('class-data'): 
         os.makedirs('class-data')
-    decks_df.to_csv(os.path.join('class-data', 
-        '{}-decks.csv'.format(class_name.lower())))
+    decks_df.to_csv(os.path.join('class-data', f'{class_name.lower()}-decks.csv'))
 
 
 def main():
@@ -98,9 +118,9 @@ def main():
     all_card_data = pd.read_csv('allcarddata.csv')
     hs_classes = ['DRUID', 'HUNTER', 'MAGE', 'PALADIN', 'PRIEST', 'ROGUE', 
         'SHAMAN', 'WARLOCK', 'WARRIOR']
-    for c in hs_classes:
-        scrape_class(c, all_card_data)
-        print('{} decks successfully scraped.'.format(c))
+    for class_name in hs_classes:
+        scrape_class(class_name, all_card_data)
+        print(f'{class_name} decks successfully scraped.')
 
 
 if __name__ == '__main__':

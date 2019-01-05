@@ -9,10 +9,10 @@ def build_card_dict(card_dataframe):
     with/without a given card
     '''
 
-    d = {}
+    card_dict = {}
     for card_name in card_dataframe['Name']:
-        d[card_name] = 0
-    return d
+        card_dict[card_name] = 0
+    return card_dict
 
 
 def enter_card(remaining_decks):
@@ -23,7 +23,9 @@ def enter_card(remaining_decks):
     while True:
         try:
             card_played = input('Card played: ')
-            return card_played, remaining_decks.loc[remaining_decks[card_played] == 1]
+            # card_played = card_played.lower()
+            return card_played, remaining_decks.loc[(remaining_decks[card_played] == 1) | \
+                (remaining_decks[card_played] == 2)]
         except KeyError:
             print('Card not found in any decks.')
 
@@ -44,7 +46,7 @@ def get_card_probabilities(decks, all_cards):
     total_games = decks['Games Played'].sum()
     for idx, row in decks.iterrows():
         for card_name in all_cards['Name']:
-            if row[card_name] == 1:
+            if (row[card_name] == 1) or (row[card_name] == 2):
                 card_dict[card_name] += row['Games Played'] / total_games
 
     return card_dict
@@ -58,7 +60,7 @@ def get_class_data_from_csv():
     while True:
         try:
             opponent_class = input("Enter opponent's class: ").lower()
-            return pd.read_csv(os.path.join('class-data', '{}-decks.csv'.format(opponent_class)))
+            return pd.read_csv(os.path.join('class-data', f'{opponent_class}-decks.csv'))
         except FileNotFoundError:
             print('Class file not found. Try again.')
 
@@ -71,12 +73,12 @@ def print_game_state(sorted_cards, cards_seen):
     print()
     print("Cards likely in opponent's deck:")
     for card_name, prob in sorted_cards:
-        if (prob > 0.05) and (card_name not in cards_seen):
-            print('   {}| {} %'.format(card_name.ljust(25), str(round(prob*100, 1))))
+        if (prob > 0.05):
+            print(f'   {card_name.ljust(25)}| {str(round(prob*100, 1))} %')
 
     print('Cards already played:')
     for card in cards_seen:
-        print('   {}'.format(card))
+        print(f'   {card}')
     print()
 
 
@@ -97,7 +99,15 @@ def main():
     while True:
         # Get user input about card played by opponent, subset decks accordingly
         card_played, possible_decks = enter_card(possible_decks)
-        cards_seen.append(card_played)
+        # "Remove" the played card from the deck
+        possible_decks[card_played] = possible_decks[card_played] - 1
+
+        # Add the played card to the cards we've seen, or note that it's the 2nd
+        if card_played in cards_seen:
+            cards_seen.remove(card_played)
+            cards_seen.append(f'{card_played} x2')
+        else:
+            cards_seen.append(card_played)
 
         # Get sorted list of cards from most to least likely
         sorted_cards = sorted(get_card_probabilities(possible_decks, all_card_data).items(), 
