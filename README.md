@@ -11,10 +11,10 @@ Then, run hs-predictor.py while playing Hearthstone and enter the cards used by 
 
 
 # Credit
-Hearthstone deck data was scraped from hsreplay.net -  
+Hearthstone deck data were scraped from hsreplay.net -  
 https://hsreplay.net/  
 
-Data for all cards was obtained from the public Google doc here -  
+Data for all cards were obtained from the public Google doc here -  
 https://docs.google.com/spreadsheets/d/1tYuukT1O3qdvbSfpUAbJMJLYkusXclc-Rivd-uMy6g0/edit#gid=661942186  
 
 # Contact Information  
