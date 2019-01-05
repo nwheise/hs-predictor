@@ -2,14 +2,18 @@
 A simple project for predicting an opponent's deck in Hearthstone.  
 Python Version 3.6.6
 
-The script allows the user to enter the opponent's class and then, as the game is being played, enter what cards are used by the opponent.  
-After each card is entered, the script returns the list of possible cards in the opponent's deck with the corresponding probability that the card is included.  
-Probabilities are calculated by counting the games played by decks including the cards already played, divided by the total number of games for which we have data.  
+<p>The script allows the user to enter the opponent's class and then, as the game is being played, enter what cards are used by the opponent. After each card is entered, the script returns the list of possible cards in the opponent's deck with the corresponding probability that the card is included.</p>
+<p>Probabilities are calculated by counting the games played by decks including the cards already played, divided by the total number of games for which we have data.</p>
 
 
+<<<<<<< HEAD
 The scrape-decks.py script should be run first, to scrape the most popular recent decks being used.    
 The scraper uses selenium to scrape deck data from hsreplay.net, and beautifulsoup to parse the html and obtain the relevant information.
 Then, run hs-predictor.py while playing Hearthstone and enter the cards used by the opponent as they appear.  
+=======
+<p>The scrape-decks.py script should be run first, to scrape the most popular recent decks being used.</p> 
+</p>The scraper uses selenium to scrape deck data from hsreplay.net, and beautifulsoup to parse the html and obtain the relevant information.</p>
+>>>>>>> 4bb0bb0591094484bb18c247e5a8a966a0c7a73a
 
 
 # Credit
