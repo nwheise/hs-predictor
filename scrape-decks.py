@@ -13,6 +13,10 @@ enter card names exactly as they appear on the card. Also, HSReplay made a
 mistake in their HTML and labelled "Mosh'ogg Enforcer" as "Mosh'Ogg Enforcer"
 '''
 
+'''
+TODO: decks are no longer being scraped correctly :(
+'''
+
 
 def scrape_pages(class_name):
     '''
@@ -22,14 +26,15 @@ def scrape_pages(class_name):
 
     # Set up the FireFox webdriver
     os.environ['MOZ_HEADLESS'] = '1'
-    binary = FirefoxBinary('C:\\Program Files\\Mozilla Firefox\\firefox.exe', 
-        log_file=sys.stdout)
+    binary = FirefoxBinary('C:\\Program Files\\Mozilla Firefox\\firefox.exe',
+                           log_file=sys.stdout)
     driver = webdriver.Firefox(firefox_binary=binary)
 
     # Get the html soups with BeautifulSoup
     soup_list = []
     for i in range(30):
-        driver.get(f'https://hsreplay.net/decks/#playerClasses={class_name}&page={i}')
+        driver.get('https://hsreplay.net/decks/#playerClasses=' +
+                   f'{class_name}&page={i}&sortDirection=descending')
         soup_list.append(BeautifulSoup(driver.page_source, 'html.parser'))
     driver.quit()
 
@@ -38,16 +43,16 @@ def scrape_pages(class_name):
 
 def create_deck_row(tile_soup, all_card_data):
     '''
-    Creates a pandas dataframe whose columns are all cards in Hearthstone, 
+    Creates a pandas dataframe whose columns are all cards in Hearthstone,
     where the row val is how many of that card is included in the deck (either
     0, 1, or 2)
     '''
 
     # Separate deck name, games played, and the cards
-    deck_name = tile_soup.find('span', attrs={'class': 'deck-name'}).string 
+    deck_name = tile_soup.find('span', attrs={'class': 'deck-name'}).string
     game_count = tile_soup.find('span', attrs={'class': 'game-count'}).string
     card_list = tile_soup.find('ul', attrs={'class': 'card-list'})
-    
+
     # Create a list of the card names
     cards = []
     for card in card_list.find_all('a'):
@@ -80,13 +85,13 @@ def create_deck_row(tile_soup, all_card_data):
 
     new_deck['Deck Name'] = deck_name
     new_deck['Games Played'] = int(game_count.replace(',', ''))
-    
+
     return new_deck
 
 
 def scrape_class(class_name, all_card_data):
     '''
-    Takes the class name and scrapes the top deck data for that class from 
+    Takes the class name and scrapes the top deck data for that class from
     HS Replay. Saves the deck data in a csv file.
     '''
 
@@ -100,14 +105,15 @@ def scrape_class(class_name, all_card_data):
     for page_soup in soup_list:
         deck_tiles = page_soup.find_all('div', attrs={'class': 'deck-tile'})
         for tile in deck_tiles:
-            decks_df = decks_df.append(create_deck_row(tile, all_card_data), 
-                ignore_index=True,
-                sort=False)
+            decks_df = decks_df.append(create_deck_row(tile, all_card_data),
+                                       ignore_index=True,
+                                       sort=False)
 
     # Write to the csv file
-    if not os.path.isdir('class-data'): 
+    if not os.path.isdir('class-data'):
         os.makedirs('class-data')
-    decks_df.to_csv(os.path.join('class-data', f'{class_name.lower()}-decks.csv'))
+    decks_df.to_csv(os.path.join('class-data',
+                                 f'{class_name.lower()}-decks.csv'))
 
 
 def main():
@@ -116,8 +122,8 @@ def main():
     '''
 
     all_card_data = pd.read_csv('allcarddata.csv')
-    hs_classes = ['DRUID', 'HUNTER', 'MAGE', 'PALADIN', 'PRIEST', 'ROGUE', 
-        'SHAMAN', 'WARLOCK', 'WARRIOR']
+    hs_classes = ['DRUID', 'HUNTER', 'MAGE', 'PALADIN', 'PRIEST', 'ROGUE',
+                  'SHAMAN', 'WARLOCK', 'WARRIOR']
     for class_name in hs_classes:
         scrape_class(class_name, all_card_data)
         print(f'{class_name} decks successfully scraped.')
