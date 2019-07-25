@@ -17,7 +17,3 @@ https://hsreplay.net/
 
 Data for all cards were obtained from the public Google doc here -  
 https://docs.google.com/spreadsheets/d/1tYuukT1O3qdvbSfpUAbJMJLYkusXclc-Rivd-uMy6g0/edit#gid=661942186  
-
-# Contact Information  
-Name: Nick Heise  
-Email: me@nh.cool   
